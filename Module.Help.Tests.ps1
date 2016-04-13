@@ -14,10 +14,8 @@
 	For a help test that is located in a module directory, use https://github.com/juneb/PesterTDD/InModule.Help.Tests.ps1
 #>
 
-#Requires -Module @{ModuleName='Pester'; ModuleVersion='3.4.0'}
 
-$ModuleBase = Split-Path -Parent $MyInvocation.MyCommand.Path
-$module = Split-Path -Leaf $ModuleBase
+#Requires -Module @{ModuleName='Pester'; ModuleVersion='3.4.0'}
 
 # Specify the name and version of the module to test
 $ModuleName = 'Microsoft.PowerShell.Archive'
