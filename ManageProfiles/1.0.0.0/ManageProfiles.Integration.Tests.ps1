@@ -55,7 +55,7 @@ InModuleScope "ManageProfiles" {
 			$expected = Get-ExpectedProfiles
 			
 			It "Example 1: Gets all profiles - name" {
-				Get-Profile | Should BeLike "*profile.ps1"
+				Get-Profile | ForEach-Object { $_ | Should BeLike "*profile.ps1" }
 			}
 			
 			It "Example 1: Gets all and only profiles - count" {
@@ -68,7 +68,7 @@ InModuleScope "ManageProfiles" {
 			$expected = Get-ExpectedDisabledProfiles
 			
 			It "Example 2: Gets all disabled profiles - name" {
-				Get-Profile -Disabled | Should BeLike "*profile.ps1.disabled"
+				Get-Profile -Disabled | ForEach-Object { $_ | Should BeLike "*profile.ps1.disabled" }
 			}
 			
 			It "Example 2: Gets all and only disabled profiles - count" {
@@ -106,7 +106,7 @@ InModuleScope "ManageProfiles" {
 			$expected = Get-Profile -ErrorAction Stop
 			
 			It "Example 1: Disables all profiles - name" {
-				Disable-Profile | Should BeLike "*profile.ps1.disabled"
+				Disable-Profile | ForEach-Object { $_ | Should BeLike "*profile.ps1.disabled" }
 			}
 			
 			It "Example 1: Disables all profiles - count" {
@@ -119,11 +119,13 @@ InModuleScope "ManageProfiles" {
 			Mock IsAdmin -MockWith {$False}
 			
 			It "Example 2: Disables CurrentUser profiles" {
-				(Disable-Profile -ErrorAction SilentlyContinue).Fullname | Should BeLike "$Home*profile.ps1.disabled"
+				(Disable-Profile -ErrorAction SilentlyContinue).Fullname | ForEach-Object {
+					$_ | Should BeLike "$Home*profile.ps1.disabled"
+				}
 			}
 			
 			It "Example 2: Cannot disable AllUser profiles" {
-				Get-Profile | Should BeLike "$PSHome*profile.ps1"
+				Get-Profile | ForEach-Object { $_ | Should BeLike "$PSHome*profile.ps1" }
 			}
 		}
 		
@@ -149,7 +151,7 @@ InModuleScope "ManageProfiles" {
 			$expected = Get-Profile -Disabled -ErrorAction Stop
 			
 			It "Enables all profiles - name" {
-				Enable-Profile | Should BeLike "*profile.ps1"
+				Enable-Profile | ForEach-Object { $_ | Should BeLike "*profile.ps1" }
 			}
 			
 			It "Enables all profiles - count" {
@@ -162,11 +164,14 @@ InModuleScope "ManageProfiles" {
 			Mock IsAdmin -MockWith { $False }
 			
 			It "Example 2: Disables CurrentUser profiles" {
-				(Enable-Profile -ErrorAction SilentlyContinue).Fullname | Should BeLike "$Home*profile.ps1"
+				(Enable-Profile -ErrorAction SilentlyContinue).Fullname | ForEach-Object {
+					$_ |  Should BeLike "$Home*profile.ps1" }
 			}
 			
 			It "Example 2: Cannot disable AllUser profiles" {
-				Get-Profile -Disabled | Should BeLike "$PSHome*profile.ps1.disabled"
+				Get-Profile -Disabled | ForEach-Object {
+					$_ | Should BeLike "$PSHome*profile.ps1.disabled"
+				}
 			}
 		}
 		

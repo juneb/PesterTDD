@@ -213,7 +213,7 @@ InModuleScope "ManageProfiles" {
 	Describe "Disable-Profile - UnitTest" -Tag UnitTest {
 		
 		# This Context block contains the mocking for the CurrentUser profiles.
-		Context "Mock Get-Profile and user profiles" {
+		Context "Example 1: Mock Get-Profile and user profiles" {
 			
 			# Mock only with CurrentUser profiles (Not System32)
 			# In this test, we mock Get-Profile, because Disable-Profiles calls Get-Profile.
