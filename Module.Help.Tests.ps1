@@ -14,16 +14,25 @@
 	For a help test that is located in a module directory, use https://github.com/juneb/PesterTDD/InModule.Help.Tests.ps1
 #>
 
+Param
+(
+	[Parameter(Mandatory = $true)]
+	[ValidateScript({ Get-Module -ListAvailable -Name $_ })]
+	[string]
+	$ModuleName,
+	
+	[Parameter(Mandatory = $true)]
+	[System.Version]
+	$RequiredVersion
+)
 
-#Requires -Module @{ModuleName='PSScriptAnalyzer'; ModuleVersion='1.5.0'}
-
-# Specify the name and version of the module to test
-$ModuleName = 'PSScriptAnalyzer'
-$RequiredVersion = '1.5.0'
-
+# Remove all versions of the module from the session. Pester can't handle multiple versions.
 Get-Module $ModuleName | Remove-Module
+
+# Import the required version
 Import-Module $ModuleName -RequiredVersion $RequiredVersion -ErrorAction Stop
-$commands = Get-Command -FullyQualifiedModule @{ ModuleName = $ModuleName;  RequiredVersion=$RequiredVersion}
+$ms = [Microsoft.PowerShell.Commands.ModuleSpecification]@{ ModuleName = $ModuleName; RequiredVersion = $RequiredVersion }
+$commands = Get-Command -FullyQualifiedModule $ms
 
 ## When testing help, remember that help is cached at the beginning of each session.
 ## To test, restart session.
