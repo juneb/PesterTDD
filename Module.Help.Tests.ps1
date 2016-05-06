@@ -15,11 +15,11 @@
 #>
 
 
-#Requires -Module @{ModuleName='Pester'; ModuleVersion='3.4.0'}
+#Requires -Module @{ModuleName='PSScriptAnalyzer'; ModuleVersion='1.5.0'}
 
 # Specify the name and version of the module to test
-$ModuleName = 'Microsoft.PowerShell.Archive'
-$RequiredVersion = '1.0.0.0'
+$ModuleName = 'PSScriptAnalyzer'
+$RequiredVersion = '1.5.0'
 
 Get-Module $ModuleName | Remove-Module
 Import-Module $ModuleName -RequiredVersion $RequiredVersion -ErrorAction Stop
@@ -60,11 +60,21 @@ foreach ($command in $commands)
 			'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
 			
 			$parameterNames = (Get-Command $command).ParameterSets.Parameters.Name | Sort-Object -Unique | Where-Object { $_ -notin $common }
+			$HelpParameters = (Get-Help $command).Parameters.Parameter.Name | Sort-Object -Unique
+			
 			foreach ($parameterName in $parameterNames)
 			{
 				# Should be a description for every parameter
 				It "gets help for parameter: $parameterName" {
 					(Get-Help $command -Parameter $parameterName -ErrorAction SilentlyContinue).Description.Text | Should Not BeNullOrEmpty
+				}
+			}
+			
+			foreach ($helpParm in $HelpParameters)
+			{
+				# Shouldn't find extra parameters in help.
+				It "finds help parameter in code: $helpParm" {
+					$helpParm -in $parameterNames | Should Be $true
 				}
 			}
 		}

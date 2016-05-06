@@ -71,11 +71,21 @@ foreach ($command in $commands)
 			'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
 			
 			$parameterNames = (Get-Command $command).ParameterSets.Parameters.Name | Sort-Object -Unique | Where-Object { $_ -notin $common }
+			$HelpParameters = (Get-Help $command).Parameters.Parameter.Name | Sort-Object -Unique
+			
 			foreach ($parameterName in $parameterNames)
 			{
 				# Should be a description for every parameter
 				It "gets help for parameter: $parameterName" {
 					(Get-Help $command -Parameter $parameterName -ErrorAction SilentlyContinue).Description.Text | Should Not BeNullOrEmpty
+				}
+			}
+			
+			foreach ($helpParm in $HelpParameters)
+			{
+				# Shouldn't be any extra parameters in help
+				It "finds help parameter in code: $helpParm" {
+					$helpParm -in $parameterNames | Should Be $true
 				}
 			}
 		}
