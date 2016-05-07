@@ -68,14 +68,24 @@ foreach ($command in $commands)
 			$Common = 'Debug', 'ErrorAction', 'ErrorVariable', 'InformationAction', 'InformationVariable', 'OutBuffer', 'OutVariable',
 			'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
 			
-			$parameterNames = (Get-Command $command).ParameterSets.Parameters.Name | Sort-Object -Unique | Where-Object { $_ -notin $common }
+			$parameters = (Get-Command $command).ParameterSets.Parameters | Sort-Object -Property Name -Unique | Where-Object { $_.Name -notin $common }
+			$parameterNames = $parameters.Name
 			$HelpParameters = (Get-Help $command).Parameters.Parameter.Name | Sort-Object -Unique
 			
-			foreach ($parameterName in $parameterNames)
+			foreach ($parameter in $parameters)
 			{
+				$parameterName = $parameter.Name
+				$helpParameter = Get-Help $command -Parameter $parameterName -ErrorAction SilentlyContinue				
+				
 				# Should be a description for every parameter
 				It "gets help for parameter: $parameterName" {
-					(Get-Help $command -Parameter $parameterName -ErrorAction SilentlyContinue).Description.Text | Should Not BeNullOrEmpty
+					$helpParameter.Description.Text | Should Not BeNullOrEmpty
+				}
+				
+				# Required value in Help should match IsMandatory property of parameter
+				It "help for $parameterName has correct Mandatory value" {
+					$codeMandatory = $parameter.IsMandatory.toString()
+					$helpParameter.Required | Should be $codeMandatory
 				}
 			}
 			
@@ -85,7 +95,7 @@ foreach ($command in $commands)
 				It "finds help parameter in code: $helpParm" {
 					$helpParm -in $parameterNames | Should Be $true
 				}
-			}
+			}			
 		}
 	}
 }
