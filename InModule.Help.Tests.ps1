@@ -33,7 +33,7 @@ Get-Module $ModuleName | Remove-Module
 # Because ModuleBase includes version number, this imports the required version
 # of the module
 $Module = Import-Module $ModuleBase\$ModuleName.psd1 -PassThru -ErrorAction Stop
-$commands = Get-Command -Module $module
+$commands = Get-Command -Module $module -CommandType Cmdlet, Function, Workflow  # Not alias
 
 
 ## When testing help, remember that help is cached at the beginning of each session.
