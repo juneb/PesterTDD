@@ -21,10 +21,15 @@ Param
 	[string]
 	$ModuleName,
 	
-	[Parameter(Mandatory = $true)]
+	[Parameter(Mandatory = $false)]
 	[System.Version]
 	$RequiredVersion
 )
+
+if (!$RequiredVersion)
+{
+	$RequiredVersion = (Get-Module $ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1).Version
+}
 
 # Remove all versions of the module from the session. Pester can't handle multiple versions.
 Get-Module $ModuleName | Remove-Module

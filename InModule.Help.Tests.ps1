@@ -14,6 +14,13 @@
 
 $ModuleBase = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# For tests in .\Tests subdirectory
+if ((Split-Path $ModuleBase -Leaf) -eq 'Tests')
+{
+	$ModuleBase = Split-Path $ModuleBase -Parent
+}
+
+
 # Handles modules in version directories
 $leaf = Split-Path $ModuleBase -Leaf
 $parent = Split-Path $ModuleBase -Parent
