@@ -1,18 +1,56 @@
 ﻿<#	
-	.NOTES
-		===========================================================================
-		Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2016 v5.2.119
-		Created on:   	4/12/2016 1:11 PM
-		Created by:   	June Blender
-		Organization: 	SAPIEN Technologies, Inc
-		Filename:		*.Help.Tests.ps1
-		===========================================================================
-	.DESCRIPTION
-	Test help for a module. You can run this Tests file from any location. 
-    To specify the module to test, enter values for the $ModuleName and $RequiredVersion variables.
+.SYNOPSIS
+Tests the PowerShell help for the commands in a module. 
 
-	For a help test that is located in a module directory, use https://github.com/juneb/PesterTDD/InModule.Help.Tests.ps1
+.DESCRIPTION
+This Pester test verifies that the commands in a module have basic help content. 
+It works on all command types and both comment-based and XML help.
+
+This test verifies that Get-Help is not autogenerating help because it cannot
+find any help for the command. Then, it checks for the following help elements:
+	- Synopsis
+	- Description
+	- Parameter:
+		- A description of each parameter.
+		- An accurate value for the Mandatory property.
+		- An accurate value for the .NET type of the parameter value.
+	- No extra parameters:
+		- Verifies that there are no parameters in help that are not also in the code.
+
+You can run this Tests file from any location. For a help test that is located in a module 
+directory, use https://github.com/juneb/PesterTDD/InModule.Help.Tests.ps1
+
+To use Invoke-Pester, set the default value of the ModuleName parameter to the name
+of the module.
+
+.PARAMETER ModuleName
+Enter the name of the module to test. You can enter only one name at a time. This
+parameter is mandatory.
+
+.PARAMETER RequiredVersion
+Enter the version of the module to test. This parameter is optional. If you 
+omit it, the test runs on the latest version of the module in $env:PSModulePath.
+
+.EXAMPLE
+.\Module.Help.Tests.ps1 -ModuleName Pester -RequiredVersion 3.4.0
+This command runs the tests on the commands in Pester 3.4.0.
+
+.EXAMPLE
+.\Module.Help.Tests.ps1 -ModuleName Pester
+This command runs the tests on the commands in latest local version of the
+Pester module.
+
+
+.NOTES
+	===========================================================================
+	Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2016 v5.2.119
+	Created on:   	4/12/2016 1:11 AM
+	Created by:   	June Blender
+	Organization: 	SAPIEN Technologies, Inc
+	Filename:		*.Help.Tests.ps1
+	===========================================================================
 #>
+
 
 Param
 (
