@@ -12,6 +12,98 @@
 	To test any module from any path, use https://github.com/juneb/PesterTDD/Module.Help.Tests.ps1
 #>
 
+<#
+.SYNOPSIS
+Gets command parameters; one per name. Prefers default parameter set.
+
+.DESCRIPTION
+Gets one CommandParameterInfo object for each parameter in the specified
+command. If a command has more than one parameter with the same name, this
+function gets the parameters in the default parameter set, if one is specified.
+
+For example, if a command has two parameter sets:
+	Name, ID  (default)
+	Name, Path
+This function returns:
+    Name (default), ID Path
+
+This function is used to get parameters for help and for help testing.
+
+.PARAMETER Command
+Enter a CommandInfo object, such as the object that Get-Command returns. You
+can also pipe a CommandInfo object to the function.
+
+This parameter takes a CommandInfo object, instead of a command name, so
+you can use the parameters of Get-Command to specify the module and version 
+of the command.
+
+.EXAMPLE
+PS C:\> Get-ParametersDefaultFirst -Command (Get-Command New-Guid)
+This command uses the Command parameter to specify the command to 
+Get-ParametersDefaultFirst
+
+.EXAMPLE
+PS C:\> Get-Command New-Guid | Get-ParametersDefaultFirst 
+You can also pipe a CommandInfo object to Get-ParametersDefaultFirst
+
+.EXAMPLE
+PS C:\> Get-ParametersDefaultFirst -Command (Get-Command BetterCredentials\Get-Credential)
+You can use the Command parameter to specify the CommandInfo object. This
+command runs Get-Command module-qualified name value.
+
+.EXAMPLE
+PS C:\> $ModuleSpec = @{ModuleName='BetterCredentials';RequiredVersion=4.3}
+PS C:\> Get-Command -FullyQualifiedName $ModuleSpec | Get-ParametersDefaultFirst
+This command uses a Microsoft.PowerShell.Commands.ModuleSpecification object to 
+specify the module and version. You can also use it to specify the module GUID.
+Then, it pipes the CommandInfo object to Get-ParametersDefaultFirst.
+#>
+function Get-ParametersDefaultFirst
+{
+	param
+	(
+		[Parameter(Mandatory = $true,
+				   ValueFromPipeline = $true)]
+		[System.Management.Automation.CommandInfo]
+		$Command
+	)
+	
+	BEGIN
+	{
+		$Common = 'Debug', 'ErrorAction', 'ErrorVariable', 'InformationAction', 'InformationVariable', 'OutBuffer', 'OutVariable', 'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
+		$parameters = @()
+	}
+	PROCESS
+	{
+		if ($defaultPSetName = $Command.DefaultParameterSet)
+		{
+			$defaultParameters = ($Command.ParameterSets | Where-Object Name -eq $defaultPSetName).parameters | Where-Object Name -NotIn $common
+			$otherParameters = ($Command.ParameterSets | Where-Object Name -ne $defaultPSetName).parameters | Where-Object Name -NotIn $common
+			
+			$parameters = $defaultParameters
+			if ($parameters -and $otherParameters)
+			{
+				$otherParameters | ForEach-Object {
+					if ($_.Name -notin $parameters.Name)
+					{
+						$parameters += $_
+					}
+				}
+				$parameters = $parameters | Sort-Object Name
+			}
+		}
+		else
+		{
+			$parameters = $Command.ParameterSets.Parameters | Where-Object Name -NotIn $common | Sort-Object Name -Unique
+		}
+		
+		
+		return $parameters
+	}
+	END { }
+}
+
+
 $ModuleBase = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # For tests in .\Tests subdirectory
@@ -80,7 +172,10 @@ foreach ($command in $commands)
 			$Common = 'Debug', 'ErrorAction', 'ErrorVariable', 'InformationAction', 'InformationVariable', 'OutBuffer', 'OutVariable',
 			'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
 			
-			$parameters = $command.ParameterSets.Parameters | Sort-Object -Property Name -Unique | Where-Object { $_.Name -notin $common }
+			# Get parameters. When >1 parameter with same name, 
+			# get parameter from the default parameter set, if any.
+			$parameters = Get-ParametersDefaultFirst -Command $command
+			
 			$parameterNames = $parameters.Name
 			$HelpParameterNames = $Help.Parameters.Parameter.Name | Sort-Object -Unique
 			
