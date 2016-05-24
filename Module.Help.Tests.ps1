@@ -17,11 +17,12 @@ find any help for the command. Then, it checks for the following help elements:
 	- No extra parameters:
 		- Verifies that there are no parameters in help that are not also in the code.
 
+When testing attributes of parameters that appear in multiple parameter sets,
+this test uses the parameter that appears in the default parameter set, if one
+is defined.
+
 You can run this Tests file from any location. For a help test that is located in a module 
 directory, use https://github.com/juneb/PesterTDD/InModule.Help.Tests.ps1
-
-To use Invoke-Pester, set the default value of the ModuleName parameter to the name
-of the module.
 
 .PARAMETER ModuleName
 Enter the name of the module to test. You can enter only one name at a time. This
@@ -213,7 +214,7 @@ foreach ($command in $commands)
 			
 			# Get parameters. When >1 parameter with same name, 
 			# get parameter from the default parameter set, if any.
-			$parameters = Get-ParametersDefaultFirst -Command $commands
+			$parameters = Get-ParametersDefaultFirst -Command $command
 			
 			$parameterNames = $parameters.Name
 			$HelpParameterNames = $Help.Parameters.Parameter.Name | Sort-Object -Unique
