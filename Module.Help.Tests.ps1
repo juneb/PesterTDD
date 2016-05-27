@@ -52,7 +52,6 @@ Pester module.
 	===========================================================================
 #>
 
-
 Param
 (
 	[Parameter(Mandatory = $true)]
@@ -65,6 +64,7 @@ Param
 	$RequiredVersion
 )
 
+#Requires -Module @{ModuleName = 'Pester'; ModuleVersion = '3.4.0'}
 
 <#
 .SYNOPSIS
@@ -112,9 +112,8 @@ This command uses a Microsoft.PowerShell.Commands.ModuleSpecification object to
 specify the module and version. You can also use it to specify the module GUID.
 Then, it pipes the CommandInfo object to Get-ParametersDefaultFirst.
 #>
-function Get-ParametersDefaultFirst
-{
-	param
+function Get-ParametersDefaultFirst {
+	Param
 	(
 		[Parameter(Mandatory = $true,
 				   ValueFromPipeline = $true)]
@@ -122,44 +121,90 @@ function Get-ParametersDefaultFirst
 		$Command
 	)
 	
-	BEGIN 
-	{
+	BEGIN {
 		$Common = 'Debug', 'ErrorAction', 'ErrorVariable', 'InformationAction', 'InformationVariable', 'OutBuffer', 'OutVariable', 'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
 		$parameters = @()
 	}
-	PROCESS
-	{
-		if ($defaultPSetName = $Command.DefaultParameterSet)
-		{
+	PROCESS {
+		if ($defaultPSetName = $Command.DefaultParameterSet) {
 			$defaultParameters = ($Command.ParameterSets | Where-Object Name -eq $defaultPSetName).parameters | Where-Object Name -NotIn $common
 			$otherParameters = ($Command.ParameterSets | Where-Object Name -ne $defaultPSetName).parameters | Where-Object Name -NotIn $common
 			
 			$parameters = $defaultParameters
-			if ($parameters -and $otherParameters)
-			{
+			if ($parameters -and $otherParameters) {
 				$otherParameters | ForEach-Object {
-					if ($_.Name -notin $parameters.Name)
-					{
+					if ($_.Name -notin $parameters.Name) {
 						$parameters += $_
 					}
 				}
 				$parameters = $parameters | Sort-Object Name
 			}
 		}
-		else
-		{
+		else {
 			$parameters = $Command.ParameterSets.Parameters | Where-Object Name -NotIn $common | Sort-Object Name -Unique
 		}
 		
 		
 		return $parameters
 	}
-	END {}
+	END { }
+}
+
+<#
+.SYNOPSIS
+Gets the module/snapin name and version for a command.
+
+.DESCRIPTION
+This function takes a CommandInfo object (the type that
+Get-Command returns) and retuns a custom object with the
+following properties:
+
+    -- [string] $CommandName
+	-- [string] $ModuleName (or PSSnapin name)
+	-- [string] $ModuleVersion (or PowerShell Version)
+    
+.PARAMETER CommandInfo
+Specifies a Commandinfo object, e.g. (Get-Command Get-Item).
+
+.EXAMPLE
+PS C:\> Get-CommandVersion -CommandInfo (Get-Command Get-Help)
+
+CommandName ModuleName                Version
+----------- ----------                -------
+Get-Help    Microsoft.PowerShell.Core 3.0.0.0
+
+This command gets information about a cmdlet in a PSSnapin.
+
+
+.EXAMPLE
+PS C:\> Get-CommandVersion -CommandInfo (Get-Command New-JobTrigger)
+
+CommandName    ModuleName     Version
+-----------    ----------     -------
+New-JobTrigger PSScheduledJob 1.1.0.0
+
+This command gets information about a cmdlet in a module.
+#>
+function Get-CommandVersion {
+	Param
+	(
+		[Parameter(Mandatory = $true)]
+		[System.Management.Automation.CommandInfo]
+		$CommandInfo
+	)
+	
+	if ((-not ((($commandModuleName = $CommandInfo.Module.Name) -and ($commandVersion = $CommandInfo.Module.Version)) -or
+	(($commandModuleName = $CommandInfo.PSSnapin) -and ($commandVersion = $CommandInfo.PSSnapin.Version))))) {
+		Write-Error "For $($CommandInfo.Name) :  Can't find PSSnapin/module name and version"
+	}
+	else {
+		# "For $commandName : Module is $commandModuleName. Version is $commandVersion"
+		[PSCustomObject]@{ CommandName = $CommandInfo.Name; ModuleName = $commandModuleName; Version = $commandVersion }
+	}
 }
 
 
-if (!$RequiredVersion)
-{
+if (!$RequiredVersion) {
 	$RequiredVersion = (Get-Module $ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1).Version
 }
 
@@ -169,23 +214,24 @@ Get-Module $ModuleName | Remove-Module
 # Import the required version
 Import-Module $ModuleName -RequiredVersion $RequiredVersion -ErrorAction Stop
 $ms = [Microsoft.PowerShell.Commands.ModuleSpecification]@{ ModuleName = $ModuleName; RequiredVersion = $RequiredVersion }
-$commands = Get-Command -FullyQualifiedModule $ms -CommandType Cmdlet, Function, Workflow  # Not alias
+$commands = Get-Command -FullyQualifiedModule $ms -CommandType Cmdlet, Function, Workflow # Not alias
 
 ## When testing help, remember that help is cached at the beginning of each session.
 ## To test, restart session.
 
-foreach ($command in $commands)
-{
+foreach ($command in $commands) {
 	$commandName = $command.Name
+	
+	# Get the module name and version of the command. Used in the Describe name.
+	$commandModuleVersion = Get-CommandVersion -CommandInfo $command
 	
 	# The module-qualified command fails on Microsoft.PowerShell.Archive cmdlets
 	$Help = Get-Help $ModuleName\$commandName -ErrorAction SilentlyContinue
-	if ($Help.Synopsis -like '*`[`<CommonParameters`>`]*')
-	{
+	if ($Help.Synopsis -like '*`[`<CommonParameters`>`]*') {
 		$Help = Get-Help $commandName -ErrorAction SilentlyContinue
 	}
 	
-	Describe "Test help for $commandName" {
+	Describe "Test help for $commandName in $($commandModuleVersion.ModuleName) ($($commandModuleVersion.Version))" {
 		
 		# If help is not found, synopsis in auto-generated help is the syntax diagram
 		It "should not be auto-generated" {
@@ -219,15 +265,14 @@ foreach ($command in $commands)
 			$parameterNames = $parameters.Name
 			$HelpParameterNames = $Help.Parameters.Parameter.Name | Sort-Object -Unique
 			
-			foreach ($parameter in $parameters)
-			{
-				$parameterName = $parameter.Name				
-				$parameterHelp = $Help.parameters.parameter | Where-Object Name -EQ $parameterName 
+			foreach ($parameter in $parameters) {
+				$parameterName = $parameter.Name
+				$parameterHelp = $Help.parameters.parameter | Where-Object Name -EQ $parameterName
 				
 				# Should be a description for every parameter
 				It "gets help for parameter: $parameterName : in $commandName" {
 					$parameterHelp.Description.Text | Should Not BeNullOrEmpty
-				} 
+				}
 				
 				# Required value in Help should match IsMandatory property of parameter
 				It "help for $parameterName parameter in $commandName has correct Mandatory value" {
@@ -240,17 +285,16 @@ foreach ($command in $commands)
 					$codeType = $parameter.ParameterType.Name
 					# To avoid calling Trim method on a null object.
 					$helpType = if ($parameterHelp.parameterValue) { $parameterHelp.parameterValue.Trim() }
-					$helpType | Should be $codeType
+					$helpType | Should be $codeType 
 				}
 			}
 			
-			foreach ($helpParm in $HelpParameterNames)
-			{
+			foreach ($helpParm in $HelpParameterNames) {
 				# Shouldn't find extra parameters in help.
 				It "finds help parameter in code: $helpParm" {
 					$helpParm -in $parameterNames | Should Be $true
 				}
-			}			
+			}
 		}
 	}
 }
