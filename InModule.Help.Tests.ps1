@@ -151,6 +151,10 @@ foreach ($command in $commands)
 		It "should not be auto-generated" {
 			$Help.Synopsis | Should Not BeLike '*`[`<CommonParameters`>`]*'
 		}
+
+		It "synopsis should not be left out of existing help" {
+			$Help.Synopsis | Should Not beNullOrEmpty
+		}
 		
 		# Should be a description for every function
 		It "gets description for $commandName" {
