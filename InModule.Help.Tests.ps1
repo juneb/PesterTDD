@@ -80,7 +80,7 @@ function Get-ParametersDefaultFirst
 			$defaultParameters = ($Command.ParameterSets | Where-Object Name -eq $defaultPSetName).parameters | Where-Object Name -NotIn $common
 			$otherParameters = ($Command.ParameterSets | Where-Object Name -ne $defaultPSetName).parameters | Where-Object Name -NotIn $common
 			
-			$parameters = $defaultParameters
+			$parameters += $defaultParameters
 			if ($parameters -and $otherParameters)
 			{
 				$otherParameters | ForEach-Object {
