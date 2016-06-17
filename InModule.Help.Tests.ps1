@@ -220,7 +220,7 @@ foreach ($command in $commands)
 	}
 
     Describe "$CommandName : URL links should be valid" -Tag Links {
-        $Links = $help.relatedLinks.navigationLink.uri | Where-Object {$_ -ne ''}
+        $Links = $help.relatedLinks.navigationLink.uri | Where-Object { ($_ -ne '') -AND ($_ -ne $Null) }
 
         foreach ($Link in $Links)
         {
