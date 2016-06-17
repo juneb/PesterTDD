@@ -301,22 +301,18 @@ foreach ($command in $commands) {
 				}
 			}
 		}
-        
-        
-        Context "$CommandName Help Links should be Valid" {            
-            $Links = $help.relatedLinks.navigationLink.uri
-        
-            foreach ($Link in $Links)
-            {
-                If ($Link)
-                {
-                    # Should have a valid uri if one is provided.
-                    It "[$Link] should have 200 Status Code for $CommandName" {        
-                        $Results = Invoke-WebRequest -Uri $Link -UseBasicParsing
-                        $Results.StatusCode | Should Be '200'
-                    }
-                }
+	}
+
+    Describe "$CommandName : URL links should be valid" -Tag Links {
+        $Links = $help.relatedLinks.navigationLink.uri | Where-Object {$_ -ne ''}
+
+        foreach ($Link in $Links)
+        {
+            # Uri returns OK. Doesn't verify content
+            It "[$Link] has 200 status code" {
+                $Results = Invoke-WebRequest -Uri $Link -UseBasicParsing
+                $Results.StatusCode | Should Be '200'
             }
         }
-	}
+    }
 }
