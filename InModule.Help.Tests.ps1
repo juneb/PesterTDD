@@ -218,4 +218,17 @@ foreach ($command in $commands)
 			}
 		}
 	}
+
+    Describe "$CommandName : URL links should be valid" -Tag Links {
+        $Links = $help.relatedLinks.navigationLink.uri | Where-Object { ($_ -ne '') -AND ($_ -ne $Null) }
+
+        foreach ($Link in $Links)
+        {
+            # Uri returns OK. Doesn't verify content
+            It "[$Link] has 200 status code" {
+                $Results = Invoke-WebRequest -Uri $Link -UseBasicParsing
+                $Results.StatusCode | Should Be '200'
+            }
+        }
+    }
 }
