@@ -127,8 +127,8 @@ function Get-ParametersDefaultFirst {
 	}
 	PROCESS {
 		if ($defaultPSetName = $Command.DefaultParameterSet) {
-			$defaultParameters = ($Command.ParameterSets | Where-Object Name -eq $defaultPSetName).parameters | Where-Object Name -NotIn $common
-			$otherParameters = ($Command.ParameterSets | Where-Object Name -ne $defaultPSetName).parameters | Where-Object Name -NotIn $common
+			$defaultParameters = $Command.ParameterSets | Where-Object Name -eq $defaultPSetName | Select-Object -ExpandProperty parameters | Where-Object Name -NotIn $common
+			$otherParameters = $Command.ParameterSets | Where-Object Name -ne $defaultPSetName | Select-Object -ExpandProperty parameters | Where-Object Name -NotIn $common
 			
 			$parameters += $defaultParameters
 			if ($parameters -and $otherParameters) {
@@ -260,9 +260,6 @@ foreach ($command in $commands) {
 		
 		Context "Test parameter help for $commandName" {
 			
-			$Common = 'Debug', 'ErrorAction', 'ErrorVariable', 'InformationAction', 'InformationVariable', 'OutBuffer', 'OutVariable',
-			'PipelineVariable', 'Verbose', 'WarningAction', 'WarningVariable'
-			
 			# Get parameters. When >1 parameter with same name, 
 			# get parameter from the default parameter set, if any.
 			$parameters = Get-ParametersDefaultFirst -Command $command
@@ -276,7 +273,7 @@ foreach ($command in $commands) {
 				
 				# Should be a description for every parameter
 				It "gets help for parameter: $parameterName : in $commandName" {
-					$parameterHelp.Description.Text | Should Not BeNullOrEmpty
+					($parameterHelp.Description.Text -join "`n") | Should Not BeNullOrEmpty
 				}
 				
 				# Required value in Help should match IsMandatory property of parameter
